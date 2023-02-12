@@ -24,10 +24,8 @@ This will generate the file `kaspa-transactions.csv`. This CSV is currently comp
 
 ## Notes
 - Compound transactions and transactions sending to yourself are ignored
-
-## Debugging
-
-If you notice the report is inaccurate, first make sure you actually listed all addresses you care about in `addresses.txt`
+- Assumes addresses from exchanges are treated as not your own
+- If you notice the report is inaccurate, first make sure you actually listed all addresses you care about in `addresses.txt`
 
 ## Found this useful?
 
