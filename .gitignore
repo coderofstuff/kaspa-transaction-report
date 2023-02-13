@@ -3,3 +3,4 @@ kaspa-transactions.csv
 *cache.json
 *Cache.json
 node_modules
+.DS_Store
