@@ -1,0 +1,99 @@
+.App {
+  /* text-align: center; */
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* justify-content: center; */
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.AppContent {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.App-logo {
+  height: 20vmin;
+  pointer-events: none;
+}
+
+.App-banner-text {
+  font-size: 0.8em;
+}
+
+.App-instructions {
+  font-size: 0.6em;
+  padding-left: 1em;
+  padding-right: 1em;
+  text-align: center;
+}
+
+.App-header {
+  flex-direction: column;
+  display: flex;
+  align-items: center;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+.AddressesText {
+  width: 45em;
+}
+
+.Footer {
+  flex-direction: column;
+  display: flex;
+  font-size: 0.6em;
+  align-items: center;
+  padding-bottom: 1em;
+}
+
+.Footer img {
+  max-width: 50px;
+  padding-top: 0.5em;
+}
+
+@media only screen and (max-width: 600px) {
+  .AddressesText {
+    width: 100%;
+  }
+}
+
+.InputContainer {
+}
+
+.DownloadLink {
+  color: #49EACB;
+  margin-top: 1em;
+}
+
+.Checkboxes {
+  color: #49EACB;
+  font-size: 0.8em;
+}
+
+.row {
+  flex-direction: row;
+  display: flex;
+}
+
+.column {
+  flex-direction: column;
+  display: flex;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
