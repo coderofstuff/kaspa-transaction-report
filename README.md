@@ -4,6 +4,10 @@ Generates a CSV file for all your Kaspa transactions.
 
 Currently in alpha - no expected SLA.
 
+## Want to just get to generating your report?
+
+You can use the deployment at https://kaspa-transaction-report.vercel.app/
+
 ## Requirement
 
 - NodeJS (v16+)
