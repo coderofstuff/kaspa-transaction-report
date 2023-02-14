@@ -75,6 +75,8 @@ async function findAllTransactions(addresses, txCache) {
             const addressTxs = await getAddressTransactions(address, txCache);
 
             txs = txs.concat(addressTxs);
+
+            await sleep(500);
         }
     }
 
@@ -85,13 +87,34 @@ async function findAllTransactions(addresses, txCache) {
 }
 
 async function getAdditionalTransactions(txs, txCache) {
-    const {data: transactionsResponse} = await axios.post(`transactions/search`, {
-        transactionIds: txs,
-    });
+    // Process it in batches to not overload the rest api
+    for (let offset = 0; offset < txs.length; offset += 500) {
 
-    transactionsResponse.forEach((tx) => {
-        txCache[tx.transaction_id] = tx;
-    });
+        const transactionIds = [];
+
+        for (let i = offset; i < offset + 500; i++) {
+            // If we know about this tx, we'll skip it
+            if (txCache[txs[i].transaction_id]) {
+                continue;
+            }
+
+            transactionIds.push(txs[i]);
+        }
+
+        if (!transactionIds.length) {
+            continue;
+        }
+
+        await sleep(1000);
+
+        const {data: transactionsResponse} = await axios.post(`transactions/search`, {
+            transactionIds,
+        });
+
+        transactionsResponse.forEach((tx) => {
+            txCache[tx.transaction_id] = tx;
+        });
+    }
 }
 
 async function getAddressTransactions(address, txCache) {
@@ -102,6 +125,8 @@ async function getAddressTransactions(address, txCache) {
     const limit = 500;
 
     for (let offset = 0; offset < txCountResponse.total; offset += limit) {
+        await sleep(500);
+
         const {data: pageTxs} = await axios.get(`addresses/${address}/full-transactions`, {
             params: {
                 offset,
@@ -119,6 +144,10 @@ async function getAddressTransactions(address, txCache) {
     }
 
     return txs;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export {generateReport};
