@@ -180,9 +180,13 @@ class App extends Component {
         </div>
 
         <footer className="Footer">
-          <span>Found this useful? Consider donating at</span>
-          <span style={{"color": "#49EACB"}}>kaspa:qq6rz6q40e4t8sft4wsphwwlqm39pzc7ehwsprepe3d5szhkanuagfwd7lxrv</span>
           <img src={donationQR} alt="kaspa:qq6rz6q40e4t8sft4wsphwwlqm39pzc7ehwsprepe3d5szhkanuagfwd7lxrv" />
+          <span>Found this useful? Consider donating at</span>
+          <div className="DonationLink">
+            <a href="https://explorer.kaspa.org/addresses/kaspa:qq6rz6q40e4t8sft4wsphwwlqm39pzc7ehwsprepe3d5szhkanuagfwd7lxrv">
+              kaspa:qq6rz6q40e4t8sft4wsphwwlqm39pzc7ehwsprepe3d5szhkanuagfwd7lxrv
+            </a>
+          </div>
         </footer>
       </div>
     );
