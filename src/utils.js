@@ -5,7 +5,7 @@ function formatDate(dt) {
 }
 
 function validateAddress(address) {
-    return /^kaspa:[a-z0-9]{61}$/.test(address);
+    return /^kaspa:[a-z0-9]{61,63}$/.test(address);
 }
 
 function sompiToKas(amount) {
