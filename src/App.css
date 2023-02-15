@@ -58,6 +58,7 @@
 .Footer img {
   max-width: 80px;
   padding-bottom: 0.5em;
+  transition: all .2s ease-in-out;
 }
 
 .Footer img:hover {
