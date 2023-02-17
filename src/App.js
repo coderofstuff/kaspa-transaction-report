@@ -1,12 +1,14 @@
 import logo from './Kaspa-LDSP-Dark Reverse.svg';
-import donationQR from './donation-qr.png';
 import { Component } from 'react';
 import { CSVLink } from 'react-csv';
 import { Grid } from 'react-loader-spinner';
+import QRCode from 'react-qr-code';
 import { format } from 'date-fns';
 import { validateAddress } from './utils';
 import { generateReport } from './report';
 import './App.css';
+
+const DONATION_ADDR = 'kaspa:qq6rz6q40e4t8sft4wsphwwlqm39pzc7ehwsprepe3d5szhkanuagfwd7lxrv';
 
 class App extends Component {
   constructor(props) {
@@ -180,12 +182,13 @@ class App extends Component {
         </div>
 
         <footer className="Footer">
-          <img src={donationQR} alt="kaspa:qq6rz6q40e4t8sft4wsphwwlqm39pzc7ehwsprepe3d5szhkanuagfwd7lxrv" />
+          <div className="DonationQR">
+            <QRCode style={{'width': '100%', 'height': '100%'}} value={DONATION_ADDR} />
+          </div>
           <span>Found this useful? Consider donating at</span>
           <div className="DonationLink">
-            <a href="https://explorer.kaspa.org/addresses/kaspa:qq6rz6q40e4t8sft4wsphwwlqm39pzc7ehwsprepe3d5szhkanuagfwd7lxrv"
-               target="_blank">
-              kaspa:qq6rz6q40e4t8sft4wsphwwlqm39pzc7ehwsprepe3d5szhkanuagfwd7lxrv
+            <a href={'https://explorer.kaspa.org/addresses/' + DONATION_ADDR} rel="noreferrer" target="_blank">
+              {DONATION_ADDR}
             </a>
           </div>
         </footer>

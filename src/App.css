@@ -55,16 +55,6 @@
   padding-bottom: 1em;
 }
 
-.Footer img {
-  max-width: 80px;
-  padding-bottom: 0.5em;
-  transition: all .2s ease-in-out;
-}
-
-.Footer img:hover {
-  transform: scale(1.5);
-}
-
 @media only screen and (max-width: 600px) {
   .AddressesText {
     width: 100%;
@@ -91,6 +81,19 @@
   text-align: center;
 }
 
+.DonationQR {
+  background: #FFF;
+  padding: 4px;
+  max-width: 80px;
+  max-height: 80px;
+  margin-bottom: 0.5em;
+  transition: all .2s ease-in-out;
+}
+
+.DonationQR:hover {
+  transform: scale(1.5);
+}
+
 .DonationLink a {
   color: #49EACB;
 }
@@ -105,11 +108,3 @@
   display: flex;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
