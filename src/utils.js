@@ -9,7 +9,7 @@ function validateAddress(address) {
 }
 
 function sompiToKas(amount) {
-    return amount / 100000000;
+    return (amount / 100000000).toFixed(8);
 }
 
 module.exports = {

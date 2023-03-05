@@ -17,8 +17,8 @@ class App extends Component {
     this.state = {
       loading: false,
       generated: false,
-      ignoreCompound: true,
-      ignoreSentToSelf: true,
+      ignoreCompound: false,
+      ignoreSentToSelf: false,
       reportData: [],
       addresses: ''
     };
@@ -48,6 +48,8 @@ class App extends Component {
             "Received Currency",
             "Fee Amount",
             "Fee Currency",
+            "Label",
+            "Description",
             "TxHash",
           ]
         ];
@@ -85,11 +87,23 @@ class App extends Component {
             rowData.push('');
           }
 
-          if (tx.sendAmount || tx.compound || this.sendToSelf) {
+          if (tx.sendAmount && tx.feeAmount) {
             rowData.push(tx.feeAmount);
             rowData.push('KAS');
           } else {
             rowData.push('');
+            rowData.push('');
+          }
+
+          if (tx.label) {
+            rowData.push(tx.label);
+          } else {
+            rowData.push('');
+          }
+
+          if (tx.description) {
+            rowData.push(tx.description);
+          } else {
             rowData.push('');
           }
 
