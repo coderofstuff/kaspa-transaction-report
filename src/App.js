@@ -19,13 +19,15 @@ class App extends Component {
       generated: false,
       ignoreCompound: false,
       ignoreSentToSelf: false,
+      hasSuggestions: false,
+      suggestedAddresses: [],
       reportData: [],
       addresses: ''
     };
   }
 
   beginReportGeneration() {
-    this.setState({loading: true, generated: false, reportData: []});
+    this.setState({loading: true, generated: false, reportData: [], hasSuggestions: false, suggestedAddresses: []});
 
     const addresses = this.state.addresses.split('\n');
 
@@ -38,7 +40,7 @@ class App extends Component {
     }
 
     generateReport(addresses)
-      .then((txs) => {
+      .then(([txs, additionalAddressesFound = []]) => {
         const reportData = [
           [
             "Date",
@@ -114,7 +116,12 @@ class App extends Component {
           prev = tx;
         }
 
-        this.setState({reportData, generated: true});
+        this.setState({
+          reportData,
+          generated: true,
+          hasSuggestions: additionalAddressesFound.length > 0,
+          suggestedAddresses: additionalAddressesFound,
+        });
       })
       .catch(console.error)
       .finally(() => {
@@ -192,6 +199,22 @@ class App extends Component {
               target="_blank"
             >Download Report</CSVLink> :
             ''
+          }
+
+          {
+            this.state.hasSuggestions ?
+            <div className="column SuggestionSection">
+              <span className="App-instructions">
+                These addresses may also belong to you. Check them in the <a href="https://explorer.kaspa.org" target="_blank" rel="noreferrer">explorer</a> and add them to your list if they are yours.
+              </span>
+              <textarea
+                className="AddressesText"
+                value={this.state.suggestedAddresses.join('\n')}
+                readOnly={true}
+                rows={Math.min(this.state.suggestedAddresses.length, 5)}
+              ></textarea>
+            </div>
+            : ''
           }
         </div>
 

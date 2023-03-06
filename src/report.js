@@ -12,6 +12,8 @@ async function generateReport(addresses) {
 
     console.info('Generating report');
 
+    const suggestedAddresses = new Set();
+    const additionalAddressesFound = [];
     const additionalTxToSearch = [];
 
     txs.forEach((tx) => {
@@ -52,6 +54,16 @@ async function generateReport(addresses) {
         const isAllMyInput = outpointedInputs.length && !outpointedInputs.some((outpoint) => addresses.indexOf(outpoint.script_public_key_address) === -1);
         const isAnyMyInput = outpointedInputs.length && outpointedInputs.some((outpoint) => addresses.indexOf(outpoint.script_public_key_address) > -1);
 
+        if (isAnyMyInput && !isAllMyInput) {
+            // Might have some suggestions here:
+            for (const outpoint of outpointedInputs) {
+                if (addresses.indexOf(outpoint.script_public_key_address) === -1) {
+                    // This is a possible suggestion:
+                    suggestedAddresses.add(outpoint.script_public_key_address);
+                }
+            }
+        }
+
         const compound = isAllMyInput && isAllMyOutput && tx.outputs.length === 1;
         const isSendToSelf = isAllMyInput && isAllMyOutput && outpointedInputs.length;
 
@@ -77,7 +89,11 @@ async function generateReport(addresses) {
         return txResult;
     });
 
-    return processedTxs;
+    for (const suggestion of suggestedAddresses) {
+        additionalAddressesFound.push(suggestion);
+    }
+
+    return [processedTxs, additionalAddressesFound];
 }
 
 async function findAllTransactions(addresses, txCache) {    
