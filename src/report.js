@@ -30,7 +30,7 @@ async function generateReport(addresses) {
         const outpointedInputs = tx.inputs.map((inpoint) => {
             if (!txCache[inpoint.previous_outpoint_hash]) {
                 // Transaction couldn't be found in outpoint, just reference it here
-                return `tx:${inpoint.previous_outpoint_hash}`;
+                return {transaction_id: inpoint.previous_outpoint_hash};
             }
             return txCache[inpoint.previous_outpoint_hash].outputs[inpoint.previous_outpoint_index];
         });
