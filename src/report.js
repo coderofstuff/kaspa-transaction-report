@@ -32,7 +32,8 @@ async function generateReport(addresses) {
                 // Transaction couldn't be found in outpoint, just reference it here
                 return {transaction_id: inpoint.previous_outpoint_hash};
             }
-            return txCache[inpoint.previous_outpoint_hash].outputs[inpoint.previous_outpoint_index];
+            
+            return txCache[inpoint.previous_outpoint_hash].outputs.find((o) => o.index == inpoint.previous_outpoint_index);
         });
 
         const addOutpoint = (total, outpoint) => total + outpoint.amount;
