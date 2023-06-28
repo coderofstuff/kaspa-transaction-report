@@ -18,7 +18,6 @@
     "@testing-library/user-event": "^14.4.3",
     "axios": "^0.27.2",
     "date-fns": "^2.29.3",
-    "nth-check": "^2.1.1",
     "react": "^18.2.0",
     "react-axios": "^2.0.6",
     "react-csv": "^2.2.2",
@@ -45,5 +44,14 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "overrides": {
+    "semver": "7.5.2",
+    "eslint": "^8.43.0",
+    "nth-check": "2.0.1",
+    "word-wrap": "@aashutoshrathi/word-wrap"
+  },
+  "devDependencies": {
+    "eslint": "^8.43.0"
   }
 }
