@@ -1,6 +1,7 @@
 const config = require('./config');
 
 const {formatDate, validateAddress, sompiToKas} = require('./utils');
+const fs = require('fs');
 
 const axios = require('axios').create({
     baseURL: config.apiBase,
@@ -11,12 +12,16 @@ async function generateReport(addresses) {
     const txs = await findAllTransactions(addresses, txCache);
 
     console.info('Generating report');
+    console.info(txs);
 
     const suggestedAddresses = new Set();
     const additionalAddressesFound = [];
     const additionalTxToSearch = [];
 
     txs.forEach((tx) => {
+        if (!tx.inputs) {
+            tx.inputs = [];
+        }
         tx.inputs.forEach((i) => {
             if (!txCache[i.previous_outpoint_hash]) {
                 additionalTxToSearch.push(i.previous_outpoint_hash);
@@ -117,26 +122,62 @@ async function findAllTransactions(addresses, txCache) {
 }
 
 async function getAdditionalTransactions(txs, txCache) {
-    const {data: transactionsResponse} = await axios.post(`transactions/search`, {
-        transactionIds: txs,
-    });
+    for (let i = 0; i < txs.length; i += 10) {
+        console.info(`Getting additional txs from idx ${i} to ${Math.min(i + 9, txs.length - 1)}`);
+        const transactionIds = [];
+        for (let j = i; j < i + 10 && j < txs.length; j++) {
+            transactionIds.push(txs[j]);
+        }
 
-    transactionsResponse.forEach((tx) => {
-        txCache[tx.transaction_id] = tx;
-    });
+        const {data: transactionsResponse} = await axios.post(`transactions/search`, {
+            transactionIds,
+        });
+
+        transactionsResponse.forEach((tx) => {
+            txCache[tx.transaction_id] = tx;
+        });
+    }
 }
 
 async function getAddressTransactions(address, txCache) {
-    const txs = [];
+    let txs = [];
 
     const {data: txCountResponse} = await axios.get(`addresses/${address}/transactions-count`);
     
     const limit = 500;
+    let lastFetchedOffsets = {};
 
-    for (let offset = 0; offset < txCountResponse.total; offset += limit) {
+    if (fs.existsSync('./address-last-fetched-offsets-cache.json')) {
+        lastFetchedOffsets = JSON.parse(fs.readFileSync('./address-last-fetched-offsets-cache.json'));
+    }
+
+    let allAddressTxs = {};
+    if (fs.existsSync('./address-tx-cache.json')) {
+        allAddressTxs = JSON.parse(fs.readFileSync('./address-tx-cache.json')) || {};
+        txs = allAddressTxs[address] || [];
+    }
+
+    allAddressTxs[address] = txs;
+
+    let previousOffset = txCountResponse.total - 1;
+
+    if (lastFetchedOffsets[address]) {
+        const additionalPagesToQuery = Math.ceil((txCountResponse.total - lastFetchedOffsets[address].previousTotal) / limit);
+        previousOffset = lastFetchedOffsets[address].offset + additionalPagesToQuery * limit;
+        console.info(previousOffset, lastFetchedOffsets[address].offset, additionalPagesToQuery);
+    } else {
+        lastFetchedOffsets[address] = {};
+    }
+
+    lastFetchedOffsets[address].previousTotal = txCountResponse.total;
+    lastFetchedOffsets[address].offset = previousOffset;
+
+    console.info('Records to query: ', lastFetchedOffsets[address].previousTotal);
+    for (let offset = previousOffset; offset >= 0; offset -= limit) {
+        console.info(`Querying from ${Math.max(0, offset - limit + 1)} to ${Math.max(0, offset - limit + 1) + limit}`);
         const {data: pageTxs} = await axios.get(`addresses/${address}/full-transactions`, {
             params: {
-                offset,
+                offset: Math.max(0, offset - limit + 1),
                 limit,
             },
         });
@@ -148,9 +189,15 @@ async function getAddressTransactions(address, txCache) {
                 txs.push(tx);
             }
         });
+
+        lastFetchedOffsets[address].offset = offset;
+
+        // Save to cache after every iteration
+        fs.writeFileSync('./address-last-fetched-offsets-cache.json', JSON.stringify(lastFetchedOffsets, null, 4));
+        fs.writeFileSync('./address-tx-cache.json', JSON.stringify(allAddressTxs, null, 4));
     }
 
     return txs;
 }
 
-export {generateReport};
+module.exports = {generateReport};
