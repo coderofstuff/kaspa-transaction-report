@@ -24,7 +24,11 @@ async function generateReport(addresses) {
         });
     });
 
-    await getAdditionalTransactions(additionalTxToSearch, txCache);
+    const PAGE_SIZE = 500;
+    for (let page = 0; page * PAGE_SIZE < additionalTxToSearch.length; page++) {
+        const batch = additionalTxToSearch.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+        await getAdditionalTransactions(batch, txCache);
+    }
 
     const processedTxs = txs.map((tx) => {
         const outpointedInputs = tx.inputs.map((inpoint) => {
