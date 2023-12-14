@@ -17,7 +17,7 @@ async function generateReport(addresses) {
     const additionalTxToSearch = [];
 
     txs.forEach((tx) => {
-        tx.inputs.forEach((i) => {
+        (tx.inputs || []).forEach((i) => {
             if (!txCache[i.previous_outpoint_hash]) {
                 additionalTxToSearch.push(i.previous_outpoint_hash);
             }
@@ -31,7 +31,7 @@ async function generateReport(addresses) {
     }
 
     const processedTxs = txs.map((tx) => {
-        const outpointedInputs = tx.inputs.map((inpoint) => {
+        const outpointedInputs = (tx.inputs || []).map((inpoint) => {
             if (!txCache[inpoint.previous_outpoint_hash]) {
                 // Transaction couldn't be found in outpoint, just reference it here
                 return {transaction_id: inpoint.previous_outpoint_hash};
@@ -88,7 +88,7 @@ async function generateReport(addresses) {
         } else {
             txResult.sendAmount = isAllMyInput && !isAllMyOutput ? sompiToKas(sendAmount - receiveAmount - feeAmount) : 0;
             txResult.receiveAmount = !isSendToSelf && receiveAmount > sendAmount ? sompiToKas(receiveAmount - sendAmount) : 0;
-            txResult.feeAmount = isAnyMyInput && tx.inputs.length ? sompiToKas(feeAmount) : 0;
+            txResult.feeAmount = isAnyMyInput && (tx.inputs || []).length ? sompiToKas(feeAmount) : 0;
         }
 
         return txResult;
@@ -137,21 +137,40 @@ async function getAddressTransactions(address, txCache) {
     
     const limit = 500;
 
+    let promises = [];
+
     for (let offset = 0; offset < txCountResponse.total; offset += limit) {
-        const {data: pageTxs} = await axios.get(`addresses/${address}/full-transactions`, {
-            params: {
-                offset,
-                limit,
-            },
-        });
-
-        pageTxs.forEach((tx) => {
-            txCache[tx.transaction_id] = tx;
-
-            if (tx.is_accepted) {
-                txs.push(tx);
+        promises.push(new Promise(async (resolve, reject) => {
+            try {
+                const {data: pageTxs} = await axios.get(`addresses/${address}/full-transactions`, {
+                    params: {
+                        offset,
+                        limit,
+                    },
+                });
+        
+                pageTxs.forEach((tx) => {
+                    txCache[tx.transaction_id] = tx;
+        
+                    if (tx.is_accepted) {
+                        txs.push(tx);
+                    }
+                });
+                resolve();
+            } catch (e) {
+                reject(e);
             }
-        });
+        }));
+
+        if (promises.length >= 5) {
+            await Promise.all(promises);
+            promises = [];
+        }
+    }
+
+    if (promises.length) {
+        await Promise.all(promises);
+        promises = [];
     }
 
     return txs;
