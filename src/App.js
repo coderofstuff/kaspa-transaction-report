@@ -28,6 +28,12 @@ class App extends Component {
       selectedYears: [],
     };
   }
+    // Method to remove years after they have been selected
+    removeYear = (yearToRemove) => {
+      this.setState(prevState => ({
+        selectedYears: prevState.selectedYears.filter(year => year !== yearToRemove)
+      }));
+    }
 
   beginReportGeneration() {
     this.setState({loading: true, generated: false, reportData: [], hasSuggestions: false, suggestedAddresses: []});
@@ -44,6 +50,17 @@ class App extends Component {
 
     generateReport(addresses)
       .then(([txs, additionalAddressesFound = []]) => {
+
+        let filteredTxs = txs;
+        // If selectedYears is not empty, filter transactions by year
+        if (this.state.selectedYears.length > 0) {
+          filteredTxs = txs.filter(tx => {
+            const txDate = new Date(tx.timestamp);
+            const txYear = txDate.getFullYear();
+            return this.state.selectedYears.includes(txYear);
+          });
+        }
+
         const reportData = [
           [
             "Date",
@@ -61,7 +78,7 @@ class App extends Component {
 
         let prev = null;
 
-        for (const tx of txs) {
+        for (const tx of filteredTxs) { 
           if (this.state.ignoreCompound && tx.compound) {
             continue;
           }
@@ -130,7 +147,7 @@ class App extends Component {
       .finally(() => {
         this.setState({loading: false});
       });
-  }
+}
 
   render() {
     const yearOptions = [2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
@@ -193,7 +210,7 @@ class App extends Component {
                     });
                   }}
                 />
-                Select Years
+                Select Specific Years
               </label>
 
               {/* Vis: If option enabled, display dropdowns*/}
@@ -218,7 +235,7 @@ class App extends Component {
 
                   {/* Array of selected Years */}
                   <button
-                    style={{ marginLeft: '0.5rem' }}
+                    style={{ marginLeft: '1rem' }}
                     onClick={() => {
                       const { currentDropdownYear, selectedYears } = this.state;
                       // Add year if its nots already in array
@@ -240,23 +257,21 @@ class App extends Component {
  
             {/* Display the years, allow user to delete */}
             {this.state.selectedYears.length > 0 && (
-              <>
-              <div style={{
-                  marginTop: '0.5rem',
-                  fontSize: '1rem',
-                  marginLeft: '1rem',
-                }}>
-                  <strong>Selected Years:</strong> {this.state.selectedYears.join(', ')}
-               <button
-               style={{ marginLeft: '0.5rem' }}
-               onClick={() => {this.setState({
-                selectedYears: this.state.selectedYears.pop});
-               }}
-             >
-               Delete
-             </button>
-             </div>
-             </>
+              <div className="selected-years">
+                <strong>Selected Years:</strong>
+                {this.state.selectedYears.map(year => (
+                  <span key={year} className="selected-year">
+                    {year}
+                    <button
+                      onClick={() => this.removeYear(year)}
+                      className="remove-year-button"
+                      aria-label={`Remove year ${year}`}
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
             )}
           </div>
 

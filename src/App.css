@@ -113,3 +113,41 @@ a {
   display: flex;
 }
 
+.selected-years {
+  margin-top: 0.5rem;
+  margin-right: 0.5rem;
+  font-size: 1rem;
+  margin-left: 1rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+
+.selected-year {
+  display: flex;
+  align-items: center;
+  margin-left: 0.75rem;
+  margin-top: 0.25rem;
+  color: #555;
+  background-color: #f0f0f0;
+  padding: 0.2rem;
+  border-radius: 4px;
+}
+
+.remove-year-button {
+  margin-left: 0.25rem;
+  background: none;
+  border: none;
+  color: red;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.remove-year-button:hover {
+  color: darkred;
+}
+
