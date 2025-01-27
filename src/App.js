@@ -22,9 +22,18 @@ class App extends Component {
       hasSuggestions: false,
       suggestedAddresses: [],
       reportData: [],
-      addresses: ''
+      addresses: '',
+      selectYear: false,
+      currentDropdownYear: null,
+      selectedYears: [],
     };
   }
+    // Method to remove years after they have been selected
+    removeYear = (yearToRemove) => {
+      this.setState(prevState => ({
+        selectedYears: prevState.selectedYears.filter(year => year !== yearToRemove)
+      }));
+    }
 
   beginReportGeneration() {
     this.setState({loading: true, generated: false, reportData: [], hasSuggestions: false, suggestedAddresses: []});
@@ -41,6 +50,17 @@ class App extends Component {
 
     generateReport(addresses)
       .then(([txs, additionalAddressesFound = []]) => {
+
+        let filteredTxs = txs;
+        // If selectedYears is not empty, filter transactions by year
+        if (this.state.selectedYears.length > 0) {
+          filteredTxs = txs.filter(tx => {
+            const txDate = new Date(tx.timestamp);
+            const txYear = txDate.getFullYear();
+            return this.state.selectedYears.includes(txYear);
+          });
+        }
+
         const reportData = [
           [
             "Date",
@@ -58,7 +78,7 @@ class App extends Component {
 
         let prev = null;
 
-        for (const tx of txs) {
+        for (const tx of filteredTxs) { 
           if (this.state.ignoreCompound && tx.compound) {
             continue;
           }
@@ -127,9 +147,11 @@ class App extends Component {
       .finally(() => {
         this.setState({loading: false});
       });
-  }
+}
 
   render() {
+    const yearOptions = [2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
+
     return (
       <div className="App">
         <header className="App-header">
@@ -142,12 +164,12 @@ class App extends Component {
           <div className="column InputContainer">
             <textarea
               className="AddressesText"
-              alt="kaspa:youradresseshere"
+              alt="kaspa:youraddresseshere"
               placeholder='kaspa:youraddressesgoeshere'
               value={this.state.addresses}
               onChange={(event) => {this.setState({addresses: event.target.value})}}
               rows="5"
-            >kaspa:youradresseshere</textarea>
+            >kaspa:youraddresseshere</textarea>
 
             <label className="Checkboxes">
               <input
@@ -172,11 +194,93 @@ class App extends Component {
               />
               Ignore transactions sent to self
             </label>
+
+            {/* Section: Select Year */}
+            <div style={{ display: 'flex', alignItems: 'center'}}>
+              <label className="Checkboxes" style={{ marginRight: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={this.state.selectYear}
+                  onChange={() => {
+                    const toggled = !this.state.selectYear;
+                    this.setState({
+                      selectYear: toggled,
+                      currentDropdownYear: toggled ? new Date().getFullYear() : null,    
+                      selectedYears: toggled ? this.state.selectedYears : [] 
+                    });
+                  }}
+                />
+                Select Specific Years
+              </label>
+
+              {/* Vis: If option enabled, display dropdowns*/}
+              {this.state.selectYear && (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <select
+                    style={{ marginLeft: '0.5rem' }}
+                    value={this.state.currentDropdownYear || ''}
+                    onChange={(event) =>
+                      this.setState({ currentDropdownYear: parseInt(event.target.value, 10) })
+                    }
+                  >
+                    <option value="" disabled>
+                      Select a year
+                    </option>
+                    {yearOptions.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Array of selected Years */}
+                  <button
+                    style={{ marginLeft: '1rem' }}
+                    onClick={() => {
+                      const { currentDropdownYear, selectedYears } = this.state;
+                      // Add year if its nots already in array
+                      if (
+                        currentDropdownYear &&
+                        !selectedYears.includes(currentDropdownYear)
+                      ) {
+                        this.setState({
+                          selectedYears: [...selectedYears, currentDropdownYear],
+                        });
+                      }
+                    }}
+                  >
+                    Add Year
+                  </button>
+                </div>
+              )}
+            </div>
+ 
+            {/* Display the years, allow user to delete */}
+            {this.state.selectedYears.length > 0 && (
+              <div className="selected-years">
+                <strong>Selected Years:</strong>
+                {this.state.selectedYears.map(year => (
+                  <span key={year} className="selected-year">
+                    {year}
+                    <button
+                      onClick={() => this.removeYear(year)}
+                      className="remove-year-button"
+                      aria-label={`Remove year ${year}`}
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Generate Report Button */}
           <button
+          style={{ marginTop: '3rem', padding:`0.5rem` }}
             onClick={this.beginReportGeneration.bind(this)}
             disabled={this.state.loading}>
-              Generate
+              <strong>Generate</strong>
           </button>
 
           <Grid

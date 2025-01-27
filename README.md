@@ -30,7 +30,13 @@ This will generate the file `kaspa-transactions.csv`. This CSV is currently comp
 - Compound transactions and transactions sending to yourself are ignored
 - Assumes addresses from exchanges are treated as not your own
 - If you notice the report is inaccurate, first make sure you actually listed all addresses you care about in `addresses.txt`
+- There is the ability to select certain years.
+  1. Tick the `Select Specific Years` checkbox
+  2. Select year from drop down
+  3. Add year
+  4. (optional) Add more years using steps 2 & 3
+  5. (optional) Delete years if you've selected the wrong one
 
-## Found this useful?
+ ## Found this useful?
 
 Consider donating to `kaspa:qq6rz6q40e4t8sft4wsphwwlqm39pzc7ehwsprepe3d5szhkanuagfwd7lxrv`
