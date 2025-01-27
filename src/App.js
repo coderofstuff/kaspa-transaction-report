@@ -22,7 +22,10 @@ class App extends Component {
       hasSuggestions: false,
       suggestedAddresses: [],
       reportData: [],
-      addresses: ''
+      addresses: '',
+      selectYear: false,
+      currentDropdownYear: null,
+      selectedYears: [],
     };
   }
 
@@ -130,6 +133,8 @@ class App extends Component {
   }
 
   render() {
+    const yearOptions = [2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
+
     return (
       <div className="App">
         <header className="App-header">
@@ -142,12 +147,12 @@ class App extends Component {
           <div className="column InputContainer">
             <textarea
               className="AddressesText"
-              alt="kaspa:youradresseshere"
+              alt="kaspa:youraddresseshere"
               placeholder='kaspa:youraddressesgoeshere'
               value={this.state.addresses}
               onChange={(event) => {this.setState({addresses: event.target.value})}}
               rows="5"
-            >kaspa:youradresseshere</textarea>
+            >kaspa:youraddresseshere</textarea>
 
             <label className="Checkboxes">
               <input
@@ -172,11 +177,95 @@ class App extends Component {
               />
               Ignore transactions sent to self
             </label>
+
+            {/* Section: Select Year */}
+            <div style={{ display: 'flex', alignItems: 'center'}}>
+              <label className="Checkboxes" style={{ marginRight: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={this.state.selectYear}
+                  onChange={() => {
+                    const toggled = !this.state.selectYear;
+                    this.setState({
+                      selectYear: toggled,
+                      currentDropdownYear: toggled ? new Date().getFullYear() : null,    
+                      selectedYears: toggled ? this.state.selectedYears : [] 
+                    });
+                  }}
+                />
+                Select Years
+              </label>
+
+              {/* Vis: If option enabled, display dropdowns*/}
+              {this.state.selectYear && (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <select
+                    style={{ marginLeft: '0.5rem' }}
+                    value={this.state.currentDropdownYear || ''}
+                    onChange={(event) =>
+                      this.setState({ currentDropdownYear: parseInt(event.target.value, 10) })
+                    }
+                  >
+                    <option value="" disabled>
+                      Select a year
+                    </option>
+                    {yearOptions.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Array of selected Years */}
+                  <button
+                    style={{ marginLeft: '0.5rem' }}
+                    onClick={() => {
+                      const { currentDropdownYear, selectedYears } = this.state;
+                      // Add year if its nots already in array
+                      if (
+                        currentDropdownYear &&
+                        !selectedYears.includes(currentDropdownYear)
+                      ) {
+                        this.setState({
+                          selectedYears: [...selectedYears, currentDropdownYear],
+                        });
+                      }
+                    }}
+                  >
+                    Add Year
+                  </button>
+                </div>
+              )}
+            </div>
+ 
+            {/* Display the years, allow user to delete */}
+            {this.state.selectedYears.length > 0 && (
+              <>
+              <div style={{
+                  marginTop: '0.5rem',
+                  fontSize: '1rem',
+                  marginLeft: '1rem',
+                }}>
+                  <strong>Selected Years:</strong> {this.state.selectedYears.join(', ')}
+               <button
+               style={{ marginLeft: '0.5rem' }}
+               onClick={() => {this.setState({
+                selectedYears: this.state.selectedYears.pop});
+               }}
+             >
+               Delete
+             </button>
+             </div>
+             </>
+            )}
           </div>
+
+          {/* Generate Report Button */}
           <button
+          style={{ marginTop: '3rem', padding:`0.5rem` }}
             onClick={this.beginReportGeneration.bind(this)}
             disabled={this.state.loading}>
-              Generate
+              <strong>Generate</strong>
           </button>
 
           <Grid
