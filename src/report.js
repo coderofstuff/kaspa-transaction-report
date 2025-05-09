@@ -4,6 +4,9 @@ const {formatDate, validateAddress, sompiToKas} = require('./utils');
 
 const axios = require('axios').create({
     baseURL: config.apiBase,
+    headers: {
+        'Accept': 'application/json',
+    },
 });
 
 async function generateReport(addresses) {
@@ -109,7 +112,6 @@ async function findAllTransactions(addresses, txCache) {
             console.info('Fetching transactions from:', address);
 
             const addressTxs = await getAddressTransactions(address, txCache);
-
             txs = txs.concat(addressTxs);
         }
     }
@@ -133,44 +135,33 @@ async function getAdditionalTransactions(txs, txCache) {
 async function getAddressTransactions(address, txCache) {
     const txs = [];
 
-    const {data: txCountResponse} = await axios.get(`addresses/${address}/transactions-count`);
-    
+    // Start querying 5 mins from now, backwards
+    let before = new Date().getTime() + 5 * 1000 * 60;
     const limit = 500;
 
-    let promises = [];
+    let hasRecords = true;
 
-    for (let offset = 0; offset < txCountResponse.total; offset += limit) {
-        promises.push(new Promise(async (resolve, reject) => {
-            try {
-                const {data: pageTxs} = await axios.get(`addresses/${address}/full-transactions`, {
-                    params: {
-                        offset,
-                        limit,
-                    },
-                });
-        
-                pageTxs.forEach((tx) => {
-                    txCache[tx.transaction_id] = tx;
-        
-                    if (tx.is_accepted) {
-                        txs.push(tx);
-                    }
-                });
-                resolve();
-            } catch (e) {
-                reject(e);
+    while (hasRecords) {
+        const response = await axios.get(`addresses/${address}/full-transactions-page`, {
+            params: {
+                limit,
+                before,
+            },
+        });
+
+        const innerTxs = response.data;
+
+        innerTxs.forEach((tx) => {
+            txCache[tx.transaction_id] = tx;
+
+            if (tx.is_accepted) {
+                txs.push(tx);
             }
-        }));
 
-        if (promises.length >= 5) {
-            await Promise.all(promises);
-            promises = [];
-        }
-    }
+            before = Math.min(before, tx.block_time);
+        });
 
-    if (promises.length) {
-        await Promise.all(promises);
-        promises = [];
+        hasRecords = innerTxs.length > 0;
     }
 
     return txs;
