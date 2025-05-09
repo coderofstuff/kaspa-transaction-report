@@ -14,6 +14,9 @@ class App extends Component {
   constructor(props) {
     super(props);
 
+    const currentYear = new Date().getFullYear();
+    const defaultStartDate = `${currentYear}-01-01`;
+
     this.state = {
       loading: false,
       generated: false,
@@ -23,17 +26,9 @@ class App extends Component {
       suggestedAddresses: [],
       reportData: [],
       addresses: '',
-      selectYear: false,
-      currentDropdownYear: null,
-      selectedYears: [],
+      startDate: defaultStartDate,
     };
   }
-    // Method to remove years after they have been selected
-    removeYear = (yearToRemove) => {
-      this.setState(prevState => ({
-        selectedYears: prevState.selectedYears.filter(year => year !== yearToRemove)
-      }));
-    }
 
   beginReportGeneration() {
     this.setState({loading: true, generated: false, reportData: [], hasSuggestions: false, suggestedAddresses: []});
@@ -48,16 +43,21 @@ class App extends Component {
       }
     }
 
-    generateReport(addresses)
+    // Create date in local timezone by using date parts
+    const [year, month, day] = this.state.startDate.split('-').map(Number);
+    const startDate = new Date(year, month - 1, day); // month is 0-based in JS Date
+    startDate.setHours(0, 0, 0, 0);
+    const startDateTimestamp = startDate.getTime();
+
+    generateReport(addresses, startDateTimestamp)
       .then(([txs, additionalAddressesFound = []]) => {
 
         let filteredTxs = txs;
-        // If selectedYears is not empty, filter transactions by year
-        if (this.state.selectedYears.length > 0) {
+        // Filter transactions by start date if one is selected
+        if (this.state.startDate) {
           filteredTxs = txs.filter(tx => {
             const txDate = new Date(tx.timestamp);
-            const txYear = txDate.getFullYear();
-            return this.state.selectedYears.includes(txYear);
+            return txDate.getTime() >= startDateTimestamp;
           });
         }
 
@@ -195,84 +195,18 @@ class App extends Component {
               Ignore transactions sent to self
             </label>
 
-            {/* Section: Select Year */}
-            <div style={{ display: 'flex', alignItems: 'center'}}>
+            {/* Start Date Input */}
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: '1rem' }}>
               <label className="Checkboxes" style={{ marginRight: '0.5rem' }}>
-                <input
-                  type="checkbox"
-                  checked={this.state.selectYear}
-                  onChange={() => {
-                    const toggled = !this.state.selectYear;
-                    this.setState({
-                      selectYear: toggled,
-                      currentDropdownYear: toggled ? new Date().getFullYear() : null,    
-                      selectedYears: toggled ? this.state.selectedYears : [] 
-                    });
-                  }}
-                />
-                Select Specific Years
+                Start Date:
               </label>
-
-              {/* Vis: If option enabled, display dropdowns*/}
-              {this.state.selectYear && (
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <select
-                    style={{ marginLeft: '0.5rem' }}
-                    value={this.state.currentDropdownYear || ''}
-                    onChange={(event) =>
-                      this.setState({ currentDropdownYear: parseInt(event.target.value, 10) })
-                    }
-                  >
-                    <option value="" disabled>
-                      Select a year
-                    </option>
-                    {yearOptions.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Array of selected Years */}
-                  <button
-                    style={{ marginLeft: '1rem' }}
-                    onClick={() => {
-                      const { currentDropdownYear, selectedYears } = this.state;
-                      // Add year if its nots already in array
-                      if (
-                        currentDropdownYear &&
-                        !selectedYears.includes(currentDropdownYear)
-                      ) {
-                        this.setState({
-                          selectedYears: [...selectedYears, currentDropdownYear],
-                        });
-                      }
-                    }}
-                  >
-                    Add Year
-                  </button>
-                </div>
-              )}
+              <input
+                type="date"
+                value={this.state.startDate}
+                onChange={(event) => this.setState({ startDate: event.target.value })}
+                style={{ marginLeft: '0.5rem' }}
+              />
             </div>
- 
-            {/* Display the years, allow user to delete */}
-            {this.state.selectedYears.length > 0 && (
-              <div className="selected-years">
-                <strong>Selected Years:</strong>
-                {this.state.selectedYears.map(year => (
-                  <span key={year} className="selected-year">
-                    {year}
-                    <button
-                      onClick={() => this.removeYear(year)}
-                      className="remove-year-button"
-                      aria-label={`Remove year ${year}`}
-                    >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Generate Report Button */}

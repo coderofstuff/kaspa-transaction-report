@@ -9,9 +9,9 @@ const axios = require('axios').create({
     },
 });
 
-async function generateReport(addresses) {
+async function generateReport(addresses, startDateTimestamp) {
     const txCache = {};
-    const txs = await findAllTransactions(addresses, txCache);
+    const txs = await findAllTransactions(addresses, txCache, startDateTimestamp);
 
     console.info('Generating report');
 
@@ -104,14 +104,14 @@ async function generateReport(addresses) {
     return [processedTxs, additionalAddressesFound];
 }
 
-async function findAllTransactions(addresses, txCache) {    
+async function findAllTransactions(addresses, txCache, startDateTimestamp) {    
     let txs = [];
 
     for (const address of addresses) {
         if (validateAddress(address)) {
             console.info('Fetching transactions from:', address);
 
-            const addressTxs = await getAddressTransactions(address, txCache);
+            const addressTxs = await getAddressTransactions(address, txCache, startDateTimestamp);
             txs = txs.concat(addressTxs);
         }
     }
@@ -132,7 +132,7 @@ async function getAdditionalTransactions(txs, txCache) {
     });
 }
 
-async function getAddressTransactions(address, txCache) {
+async function getAddressTransactions(address, txCache, startDateTimestamp) {
     const txs = [];
 
     // Start querying 5 mins from now, backwards
@@ -140,8 +140,9 @@ async function getAddressTransactions(address, txCache) {
     const limit = 500;
 
     let hasRecords = true;
+    let hasTransactionEarlierThanStartDate = false;
 
-    while (hasRecords) {
+    while (hasRecords && !hasTransactionEarlierThanStartDate) {
         const response = await axios.get(`addresses/${address}/full-transactions-page`, {
             params: {
                 limit,
@@ -159,6 +160,7 @@ async function getAddressTransactions(address, txCache) {
             }
 
             before = Math.min(before, tx.block_time);
+            hasTransactionEarlierThanStartDate = hasTransactionEarlierThanStartDate || tx.block_time < startDateTimestamp;
         });
 
         hasRecords = innerTxs.length > 0;
