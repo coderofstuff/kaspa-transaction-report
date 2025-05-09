@@ -4,11 +4,14 @@ const {formatDate, validateAddress, sompiToKas} = require('./utils');
 
 const axios = require('axios').create({
     baseURL: config.apiBase,
+    headers: {
+        'Accept': 'application/json',
+    },
 });
 
-async function generateReport(addresses) {
+async function generateReport(addresses, startDateTimestamp) {
     const txCache = {};
-    const txs = await findAllTransactions(addresses, txCache);
+    const txs = await findAllTransactions(addresses, txCache, startDateTimestamp);
 
     console.info('Generating report');
 
@@ -101,15 +104,14 @@ async function generateReport(addresses) {
     return [processedTxs, additionalAddressesFound];
 }
 
-async function findAllTransactions(addresses, txCache) {    
+async function findAllTransactions(addresses, txCache, startDateTimestamp) {    
     let txs = [];
 
     for (const address of addresses) {
         if (validateAddress(address)) {
             console.info('Fetching transactions from:', address);
 
-            const addressTxs = await getAddressTransactions(address, txCache);
-
+            const addressTxs = await getAddressTransactions(address, txCache, startDateTimestamp);
             txs = txs.concat(addressTxs);
         }
     }
@@ -130,47 +132,38 @@ async function getAdditionalTransactions(txs, txCache) {
     });
 }
 
-async function getAddressTransactions(address, txCache) {
+async function getAddressTransactions(address, txCache, startDateTimestamp) {
     const txs = [];
 
-    const {data: txCountResponse} = await axios.get(`addresses/${address}/transactions-count`);
-    
+    // Start querying 5 mins from now, backwards
+    let before = new Date().getTime() + 5 * 1000 * 60;
     const limit = 500;
 
-    let promises = [];
+    let hasRecords = true;
+    let hasTransactionEarlierThanStartDate = false;
 
-    for (let offset = 0; offset < txCountResponse.total; offset += limit) {
-        promises.push(new Promise(async (resolve, reject) => {
-            try {
-                const {data: pageTxs} = await axios.get(`addresses/${address}/full-transactions`, {
-                    params: {
-                        offset,
-                        limit,
-                    },
-                });
-        
-                pageTxs.forEach((tx) => {
-                    txCache[tx.transaction_id] = tx;
-        
-                    if (tx.is_accepted) {
-                        txs.push(tx);
-                    }
-                });
-                resolve();
-            } catch (e) {
-                reject(e);
+    while (hasRecords && !hasTransactionEarlierThanStartDate) {
+        const response = await axios.get(`addresses/${address}/full-transactions-page`, {
+            params: {
+                limit,
+                before,
+            },
+        });
+
+        const innerTxs = response.data;
+
+        innerTxs.forEach((tx) => {
+            txCache[tx.transaction_id] = tx;
+
+            if (tx.is_accepted) {
+                txs.push(tx);
             }
-        }));
 
-        if (promises.length >= 5) {
-            await Promise.all(promises);
-            promises = [];
-        }
-    }
+            before = Math.min(before, tx.block_time);
+            hasTransactionEarlierThanStartDate = hasTransactionEarlierThanStartDate || tx.block_time < startDateTimestamp;
+        });
 
-    if (promises.length) {
-        await Promise.all(promises);
-        promises = [];
+        hasRecords = innerTxs.length > 0;
     }
 
     return txs;
