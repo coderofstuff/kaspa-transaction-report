@@ -9,9 +9,9 @@ const axios = require('axios').create({
     },
 });
 
-async function generateReport(addresses, startDateTimestamp) {
+async function generateReport(addresses, startDateTimestamp, endDateTimestamp) {
     const txCache = {};
-    const txs = await findAllTransactions(addresses, txCache, startDateTimestamp);
+    const txs = await findAllTransactions(addresses, txCache, startDateTimestamp, endDateTimestamp);
 
     console.info('Generating report');
 
@@ -40,6 +40,7 @@ async function generateReport(addresses, startDateTimestamp) {
                 return {transaction_id: inpoint.previous_outpoint_hash};
             }
             
+            // eslint-disable-next-line
             return txCache[inpoint.previous_outpoint_hash].outputs.find((o) => o.index == inpoint.previous_outpoint_index);
         });
 
@@ -104,14 +105,14 @@ async function generateReport(addresses, startDateTimestamp) {
     return [processedTxs, additionalAddressesFound];
 }
 
-async function findAllTransactions(addresses, txCache, startDateTimestamp) {    
+async function findAllTransactions(addresses, txCache, startDateTimestamp, endDateTimestamp) {    
     let txs = [];
 
     for (const address of addresses) {
         if (validateAddress(address)) {
             console.info('Fetching transactions from:', address);
 
-            const addressTxs = await getAddressTransactions(address, txCache, startDateTimestamp);
+            const addressTxs = await getAddressTransactions(address, txCache, startDateTimestamp, endDateTimestamp);
             txs = txs.concat(addressTxs);
         }
     }
@@ -132,11 +133,10 @@ async function getAdditionalTransactions(txs, txCache) {
     });
 }
 
-async function getAddressTransactions(address, txCache, startDateTimestamp) {
+async function getAddressTransactions(address, txCache, startDateTimestamp, endDateTimestamp) {
     const txs = [];
 
-    // Start querying 5 mins from now, backwards
-    let before = new Date().getTime() + 5 * 1000 * 60;
+    let before = endDateTimestamp;
     const limit = 500;
 
     let hasRecords = true;
@@ -152,7 +152,7 @@ async function getAddressTransactions(address, txCache, startDateTimestamp) {
 
         const innerTxs = response.data;
 
-        innerTxs.forEach((tx) => {
+        for (const tx of innerTxs) {
             txCache[tx.transaction_id] = tx;
 
             if (tx.is_accepted) {
@@ -161,7 +161,7 @@ async function getAddressTransactions(address, txCache, startDateTimestamp) {
 
             before = Math.min(before, tx.block_time);
             hasTransactionEarlierThanStartDate = hasTransactionEarlierThanStartDate || tx.block_time < startDateTimestamp;
-        });
+        }
 
         hasRecords = innerTxs.length > 0;
     }

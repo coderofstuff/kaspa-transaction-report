@@ -16,6 +16,8 @@ class App extends Component {
 
     const currentYear = new Date().getFullYear();
     const defaultStartDate = `${currentYear}-01-01`;
+    const today = new Date();
+    const defaultEndDate = today.toISOString().split('T')[0];
 
     this.state = {
       loading: false,
@@ -27,7 +29,25 @@ class App extends Component {
       reportData: [],
       addresses: '',
       startDate: defaultStartDate,
+      endDate: defaultEndDate,
+      dateError: null,
     };
+  }
+
+  validateDateRange = () => {
+    if (!this.state.startDate || !this.state.endDate) return true;
+    const start = new Date(this.state.startDate);
+    const end = new Date(this.state.endDate);
+    return start <= end;
+  }
+
+  handleDateChange = (type, value) => {
+    this.setState({ [type]: value }, () => {
+      const isValid = this.validateDateRange();
+      this.setState({
+        dateError: isValid ? null : 'Start Date must be before End Date'
+      });
+    });
   }
 
   beginReportGeneration() {
@@ -43,21 +63,28 @@ class App extends Component {
       }
     }
 
-    // Create date in local timezone by using date parts
-    const [year, month, day] = this.state.startDate.split('-').map(Number);
-    const startDate = new Date(year, month - 1, day); // month is 0-based in JS Date
+    // Create dates in local timezone by using date parts
+    const [startYear, startMonth, startDay] = this.state.startDate.split('-').map(Number);
+    const startDate = new Date(startYear, startMonth - 1, startDay);
     startDate.setHours(0, 0, 0, 0);
-    const startDateTimestamp = startDate.getTime();
 
-    generateReport(addresses, startDateTimestamp)
+    const [endYear, endMonth, endDay] = this.state.endDate.split('-').map(Number);
+    const endDate = new Date(endYear, endMonth - 1, endDay);
+    endDate.setHours(23, 59, 59, 999);
+
+    const startDateTimestamp = startDate.getTime();
+    const endDateTimestamp = endDate.getTime();
+
+    generateReport(addresses, startDateTimestamp, endDateTimestamp)
       .then(([txs, additionalAddressesFound = []]) => {
 
         let filteredTxs = txs;
-        // Filter transactions by start date if one is selected
-        if (this.state.startDate) {
+        // Filter transactions by date range
+        if (this.state.startDate || this.state.endDate) {
           filteredTxs = txs.filter(tx => {
             const txDate = new Date(tx.timestamp);
-            return txDate.getTime() >= startDateTimestamp;
+            const txTimestamp = txDate.getTime();
+            return txTimestamp >= startDateTimestamp && txTimestamp <= endDateTimestamp;
           });
         }
 
@@ -150,8 +177,6 @@ class App extends Component {
 }
 
   render() {
-    const yearOptions = [2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
-
     return (
       <div className="App">
         <header className="App-header">
@@ -195,25 +220,46 @@ class App extends Component {
               Ignore transactions sent to self
             </label>
 
-            {/* Start Date Input */}
-            <div style={{ display: 'flex', alignItems: 'center', marginTop: '1rem' }}>
-              <label className="Checkboxes" style={{ marginRight: '0.5rem' }}>
-                Start Date:
-              </label>
-              <input
-                type="date"
-                value={this.state.startDate}
-                onChange={(event) => this.setState({ startDate: event.target.value })}
-                style={{ marginLeft: '0.5rem' }}
-              />
+            {/* Date Range Inputs */}
+            <div style={{ display: 'flex', flexDirection: 'column', marginTop: '1rem', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <label className="Checkboxes" style={{ marginRight: '0.5rem' }}>
+                    Date Range:
+                  </label>
+                  <input
+                    type="date"
+                    value={this.state.startDate}
+                    onChange={(event) => this.handleDateChange('startDate', event.target.value)}
+                    style={{ marginLeft: '0.5rem' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <label className="Checkboxes" style={{ marginRight: '0.5rem' }}>
+                    to
+                  </label>
+                  <input
+                    type="date"
+                    value={this.state.endDate}
+                    onChange={(event) => this.handleDateChange('endDate', event.target.value)}
+                    style={{ marginLeft: '0.5rem' }}
+                  />
+                </div>
+              </div>
+              {this.state.dateError && (
+                <div style={{ color: 'red', fontSize: '0.6em' }}>
+                  {this.state.dateError}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Generate Report Button */}
           <button
-          style={{ marginTop: '3rem', padding:`0.5rem` }}
+            style={{ marginTop: '3rem', padding:`0.5rem` }}
             onClick={this.beginReportGeneration.bind(this)}
-            disabled={this.state.loading}>
+            disabled={this.state.loading || this.state.dateError}>
               <strong>Generate</strong>
           </button>
 
