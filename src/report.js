@@ -147,6 +147,7 @@ async function getAddressTransactions(address, txCache, startDateTimestamp, endD
             params: {
                 limit,
                 before,
+                acceptance: 'accepted',
             },
         });
 
