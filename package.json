@@ -4,10 +4,9 @@
   "description": "Kaspa transaction report generator",
   "main": "index.js",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
     "generate": "node index.js"
   },
   "author": "coderofstuff",
@@ -24,7 +23,7 @@
     "react-dom": "^18.2.0",
     "react-loader-spinner": "^5.4.5",
     "react-qr-code": "^2.0.12",
-    "react-scripts": "5.0.1",
+    "react-app-rewired": "^2.2.1",
     "web-vitals": "^3.5.0"
   },
   "eslintConfig": {
